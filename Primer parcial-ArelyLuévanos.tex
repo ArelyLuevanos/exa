@@ -1,0 +1,151 @@
+\documentclass[letterpapper,12pt]{article}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amsthm, amsfonts}
+\usepackage{graphicx}
+
+
+\usepackage{blindtext}
+\usepackage[spanish, es-tabla]{babel}
+
+
+%----------------------------------------------------------------------------------------
+
+\title{Primer Parcial. Métodos cuántitativos II}
+ \author{Julia Arely Luévanos Castor}
+ \date{October 2020}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+La idea del trabajo es observar cuales son aquellas variables que influyen  para poder observar la luminucidad del territorio mexicano, que proviene del satélite de VIIRS(NASA), dentro de ellas se puede encontrar la nubosidad, día que se registro, municipio, etc. 
+\end{abstract}
+\begin{section}{Incorporar la base de datos (panel) en R, y declararla como panel} 
+
+luzsep <-read.csv("EXAMEN1.csv")
+
+
+panel<-pdata.frame(luzsep,index=c("clave","dia"))
+
+\end{section}
+
+%INSTALAR LOS PAQUETES Y BIBLIOTECAS NECESARIOS
+%install.packages("plm")
+%install.packages("ggplot2")
+%install.packages("gplots")
+%library("ggplot2")
+%library("plm")
+
+
+\begin{section}{Realizar una tabla de estadísticas descriptivas de las variables}
+
+
+
+
+Se establace que el número total de municipios es 2458 siendo un número constante, de tiempo son 61 días y el número total de datos observados para conocer la luminocidad en México es de 149938. (ver tabla 1)
+
+\end{section}
+%----------------------------------------------------------------------------------------
+\begin{section}{Realizar regresión pooled-OLS}
+
+En esta regresión se puede observar que las variables X1,X2,x3 y la variable mes son significativas y se pueda observar que el día del mes influye negativamente en 2.68 unididades por cada unidad que aumente la luminosidad, x4 también tiene una relación negativa más alta de 8.2 unidades, sin embargo no tiene significancia en la luminusidad del país, posiblemente la razón de esta situación se debe a que esta variable funciona como Dummy y los datos se repiten para el conjunto de municipios para cada estado; por otro lado la variable que más afecta a la variable dependiente es x2, probablemente se relaciona directamente con el clima, ya sea lluvia o nubes.
+
+\end{section}
+%----------------------------------------------------------------------------------------
+\section{Determinar si la regresióon es de efectos fijos o aleatorios}
+
+EFECTOSFIJOS<-plm(luz ~ x0 + x1 + x2 + x3 + x4 + x5 + mes, data=luzsep, index=c("clave", "dia"), model="within")
+
+
+
+EFECTOSALEATORIOS<-plm(luz ~ x0 + x1 + x2 + x3 + x4 + x5 + mes, data=luzsep, index=c("clave", "dia"), model="random")
+
+
+
+El resultado de estas regresiones, refleja que la variable x5 no es sinificativa en niguno de los dos casos, sin embargo si tienen un p-value aceptable para aceptar los resultados, al igual que el resultado de bondad de ajuste con un valor  de Adj. R-Squared 0.98123 a 0.9871
+
+Se comprueba entonces cual de los dos modelos es el que más funciona para entender el comportamiento de las variables.
+
+
+
+->TEST DE HAUSSMAN
+
+
+phtest(EFECTOSFIJOS, EFECTOSALEATORIOS)
+
+
+data:  luz ~ x0 + x1 + x2 + x3 + x4 + x5 + mes
+
+
+chisq = 2803.9, df = 6, p-value < 2.2e-16
+
+
+alternative hypothesis: one model is inconsistent
+
+
+
+
+El resultado de esta operación, nos permite observar que uno de los modelos es inconsistente, a primera vista pareciera que el modelo que pudiera funcionar de mejor manera es el de efectos aleatorios por la significancia de las variables,  sin embargo  por la naturaleza del modelo de las variables y el número de datos lo más adecuado es usar los efectos fijos, ya que la prueba de ht da como un resultado un p-value muy bajo, por lo que se rechaza la hipótesis de que el mejor modelo para explicar sea de efectos aleatorios; otra explicación puede ser que el comportamiento o cambios en las variables de tiempo  que se conocen (día1, día2...o mes 1,mes2 ) son un término constante para cada municipio o estado del país.
+
+%----------------------------------------------------------------------------------------
+
+\section{Probar si la base de datos tiene heteroscedasticidad, si la tiene, corregirla}
+
+PRUEBA DE HETEROCEDASTICIDAD/ TEST BREUSCH-PAGAN
+
+library(lmtest)
+bptest(EFECTOSFIJOS)
+plot(y = panel$luz, x =panel$dia)
+
+
+
+data:  EFECTOSFIJOS
+BP = 9122, df = 7, p-value < 2.2e-16
+
+
+
+
+Con base en el P-value y de manera grafica se puede observar que existe heterocedasticidad Lo que se puede observar con respecto a la heterocedasticidad, es una relación directa entre  la luminucidad y los dï¿½as que trasncurren, es decir, puede que en los días donde se oberva que hay más concentración de datos es porque hubo menos nubes, el satelite pudo capturar mejor las imagenes, entre otros aspectos. 
+
+
+-->PARA CORREGIR HTCD 
+
+VEF<- vcovHC(EFECTOSFIJOS, type="HC0")
+
+%----------------------------------------------------------------------------------------
+\section{¿Qué otras maneras de presentar las variables se te ocurren para que la Adj:R2 aumente de valor? ¿Es válida esa especificación? Justifique}
+
+Se pueden trabajar algunas variables explicativas con las que se tuvo problemas de significancia lo que pudo interferir en la bondad de ajuste, en ese sentido, lo más adecuado es trabajar con logaritmos y observar que sucede con este dato la idea es conocer que sucede con las variable x0,x4,x5 ya que conforme se fueron haciendo las regresiones se pudo observar que son las que menos significancia tienen, incluso con estos cambias podríamos confirmar la importancia dentro del modelo para explicar la luminucidad en el país.
+
+
+\begin{table}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+	\hline
+$\-- $ & $\ min$ & $\ 1st Qu$ & $\ Median$ & $\ Mean$ & $ \ 3rd Qu$ & $\ Max$\\
+\hline\hline
+	Luz & 0.000e+00 & 3.566e+05 & 1.236e+06 & 7.002e+06 & 4.711e+06 & 1.878e+09 \\
+	\hline
+	x0 & 17.27 & 27.98 & 30.00 & 30.00 & 32.03 & 42.17 \\
+	\hline
+	x1 & 0.000e+00 & 3.273e+05 & 1.167e+06 & 6.834e+06 & 4.504e+06 & 1.878e+09 \\
+	\hline
+	x2 & 0 & 11 & 315 & 1463 & 1227 & 170091 \\
+	\hline
+	x3 & 0 & 10548 & 44330 & 218810 & 153982  & 28549300 \\
+	\hline
+	x4 & 0 & 858 & 2380 & 9405 & 6873 & 1443663\\
+	\hline
+	x5 & 0.000046 & 1.761901 & 3.509168 & 3.507132 & 5.250761 & 6.999980 \\
+	\hline
+	mes & 1.000 & 1.000 & 1.000 & 1.492 & 2.000 & 2.000 \\
+	\hline
+\end{tabular}
+\caption{Estadística descriptiva (apartado 2)}
+\label{t1}
+\end{table}
+
+
+\end{document}
